@@ -4,7 +4,7 @@
   <br />
   <br />
 
-  <h1>🚀 Axiom - AI Memory Engine for Cities</h1>
+  <h1>Axiom - AI Memory Engine for Cities</h1>
   
   <p>
     <b>A production-ready, AI-powered municipal infrastructure management system.</b><br />
@@ -22,7 +22,7 @@
 
 ---
 
-## ⚖️ For Judges
+## For Judges
 
 **Quick Overview & Testing Guide**
 
@@ -40,7 +40,7 @@
 
 ---
 
-## 🌟 Vision
+## Vision
 
 Traditional municipal infrastructure management is reactive and fragmented. When an engineer fixes a pothole, a water main break, or a broken street light, the knowledge of *why* it broke and *how* it was fixed is often lost in endless paperwork.
 
@@ -48,18 +48,18 @@ Traditional municipal infrastructure management is reactive and fragmented. When
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 🧠 **Memory Engine**: Stores every infrastructure issue and repair as an AI-augmented, context-rich memory.
-- 🔍 **Semantic Search**: Utilizes **AI embeddings** and **pgvector** to surface historically similar issues instantly.
-- 🤖 **Automated AI Analysis**: Intelligently categorizes problems, evaluates severity, and pinpoints exact root causes.
-- 📊 **Failure Predictions**: Analyzes historical patterns and material degradation to forecast future failures.
-- 📈 **Real-Time Analytics**: Offers powerful dashboards tracking city health, engineer performance, and repair efficacy.
-- 🗺️ **Knowledge Graph**: Connects disparate memories, exposing hidden structural relationships across the municipal grid.
+- **Memory Engine**: Stores every infrastructure issue and repair as an AI-augmented, context-rich memory.
+- **Semantic Search**: Utilizes **AI embeddings** and **pgvector** to surface historically similar issues instantly.
+- **Automated AI Analysis**: Intelligently categorizes problems, evaluates severity, and pinpoints exact root causes.
+- **Failure Predictions**: Analyzes historical patterns and material degradation to forecast future failures.
+- **Real-Time Analytics**: Offers powerful dashboards tracking city health, engineer performance, and repair efficacy.
+- **Knowledge Graph**: Connects disparate memories, exposing hidden structural relationships across the municipal grid.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 Built with absolute performance and modern standards in mind, Axiom leverages a cutting-edge stack:
 
@@ -78,7 +78,7 @@ Built with absolute performance and modern standards in mind, Axiom leverages a 
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ```
 axiom/
@@ -94,7 +94,7 @@ axiom/
 
 ---
 
-## 🚀 Deploying to Vercel (End-to-End)
+## Deploying to Vercel (End-to-End)
 
 Axiom is split into two Vercel projects: **backend** and **frontend**. The database is **Vercel Postgres** — built directly into Vercel, no external service or separate account needed.
 
@@ -158,7 +158,7 @@ Make sure your code is on GitHub (Vercel imports directly from it).
 
 ---
 
-### 🏃 Running Locally (Development)
+### Running Locally (Development)
 
 ```bash
 # Terminal 1 — Backend
@@ -174,7 +174,7 @@ npm run dev   # runs on http://localhost:8080
 
 ---
 
-## 🧠 How the Memory Engine Works
+## How the Memory Engine Works
 
 1. **Intake**: A citizen or city worker reports an issue (including text, location, and optional media).
 2. **Analysis**: The AI processes the report, generating semantic vector embeddings.
