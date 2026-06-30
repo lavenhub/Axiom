@@ -1,0 +1,629 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ========================================
+// CORE USER & AUTHENTICATION
+// ========================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  cities    City[]
+  users     User[]
+}
+
+model City {
+  id             String       @id @default(uuid())
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  departments    Department[]
+  wards          Ward[]
+  users          User[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(CITIZEN)
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+  city           City?         @relation(fields: [cityId], references: [id])
+  cityId         String?
+  department     Department?   @relation(fields: [departmentId], references: [id])
+  departmentId   String?
+
+  citizenIssues  Issue[]          @relation("CitizenIssues")
+  engineerRepairs Repair[]        @relation("EngineerRepairs")
+  notifications  Notification[]
+  conversations  AIConversation[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  CITIZEN
+  ENGINEER
+  MANAGER
+  ADMIN
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  city   City   @relation(fields: [cityId], references: [id])
+  cityId String
+
+  users   User[]
+  budgets Budget[]
+
+  @@index([name])
+}
+
+// ========================================
+// GEOGRAPHY & INFRASTRUCTURE
+// ========================================
+
+model Ward {
+  id        String   @id @default(uuid())
+  name      String
+  number    Int
+  boundary  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  city   City   @relation(fields: [cityId], references: [id])
+  cityId String
+
+  locations        Location[]
+  issues           Issue[]
+  memories         Memory[]
+  predictions      Prediction[]
+  weatherSnapshots WeatherSnapshot[]
+
+  @@index([number])
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  latitude    Float
+  longitude   Float
+  address     String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  ward   Ward?   @relation(fields: [wardId], references: [id])
+  wardId String?
+
+  assets   InfrastructureAsset[]
+  issues   Issue[]
+  memories Memory[]
+
+  @@index([latitude, longitude])
+}
+
+model InfrastructureType {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  assets InfrastructureAsset[]
+
+  @@index([name])
+}
+
+model InfrastructureAsset {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  type        InfrastructureType @relation(fields: [typeId], references: [id])
+  typeId      String
+  status      AssetStatus        @default(OPERATIONAL)
+  age         Int?
+  material    String?
+  installedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  location   Location @relation(fields: [locationId], references: [id])
+  locationId String
+  issues     Issue[]
+  memories   Memory[]
+  predictions Prediction[]
+
+  @@index([typeId])
+  @@index([status])
+  @@index([locationId])
+}
+
+enum AssetStatus {
+  OPERATIONAL
+  MAINTENANCE
+  BROKEN
+  RETIRED
+}
+
+// ========================================
+// ISSUES & REPAIRS
+// ========================================
+
+model Issue {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  status      IssueStatus @default(REPORTED)
+  severity    Severity    @default(MEDIUM)
+  category    Category
+
+  gpsLatitude  Float?
+  gpsLongitude Float?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  citizen    User                 @relation("CitizenIssues", fields: [citizenId], references: [id])
+  citizenId  String
+  ward       Ward?                @relation(fields: [wardId], references: [id])
+  wardId     String?
+  location   Location?            @relation(fields: [locationId], references: [id])
+  locationId String?
+  asset      InfrastructureAsset? @relation(fields: [assetId], references: [id])
+  assetId    String?
+  media      IssueMedia[]
+  repair     Repair?
+  memory     Memory?
+  tags       Tag[]                @relation("IssueTags")
+  weather    WeatherSnapshot?     @relation(fields: [weatherId], references: [id])
+  weatherId  String?
+
+  @@index([citizenId])
+  @@index([status])
+  @@index([severity])
+  @@index([category])
+  @@index([wardId])
+  @@index([createdAt])
+}
+
+enum IssueStatus {
+  REPORTED
+  ANALYZED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Category {
+  ROAD
+  DRAINAGE
+  STREETLIGHT
+  GARBAGE
+  BRIDGE
+  PIPELINE
+  OTHER
+}
+
+model IssueMedia {
+  id        String    @id @default(uuid())
+  url       String
+  type      MediaType
+  mimeType  String
+  size      Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  issue   Issue  @relation(fields: [issueId], references: [id])
+  issueId String
+
+  @@index([issueId])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+model Repair {
+  id            String        @id @default(uuid())
+  description   String
+  startDate     DateTime?
+  endDate       DateTime?
+  outcome       RepairOutcome @default(PENDING)
+  cost          Float?
+  successScore  Int?
+  engineerNotes String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  issue       Issue         @relation(fields: [issueId], references: [id])
+  issueId     String        @unique
+  engineer    User          @relation("EngineerRepairs", fields: [engineerId], references: [id])
+  engineerId  String
+  method      RepairMethod? @relation(fields: [methodId], references: [id])
+  methodId    String?
+  rootCause   RootCause?    @relation(fields: [rootCauseId], references: [id])
+  rootCauseId String?
+  memory      Memory?
+  budget      Budget?       @relation(fields: [budgetId], references: [id])
+  budgetId    String?
+
+  @@index([issueId])
+  @@index([engineerId])
+  @@index([outcome])
+}
+
+enum RepairOutcome {
+  PENDING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+model RepairMethod {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  steps       Json?
+  avgCost     Float?
+  avgDuration Int?
+  successRate Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  repairs Repair[]
+
+  @@index([name])
+}
+
+model RootCause {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  category    Category
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  repairs Repair[]
+
+  @@index([name])
+  @@index([category])
+}
+
+// ========================================
+// MEMORY ENGINE
+// ========================================
+
+model Memory {
+  id           String    @id @default(uuid())
+  title        String
+  summary      String?
+  aiSummary    String?
+  successScore Int       @default(50)
+  
+  // Vector embedding for semantic search (stored as JSON string)
+  embedding    String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  issue      Issue                @relation(fields: [issueId], references: [id])
+  issueId    String               @unique
+  repair     Repair?              @relation(fields: [repairId], references: [id])
+  repairId   String?              @unique
+  ward       Ward?                @relation(fields: [wardId], references: [id])
+  wardId     String?
+  location   Location?            @relation(fields: [locationId], references: [id])
+  locationId String?
+  asset      InfrastructureAsset? @relation(fields: [assetId], references: [id])
+  assetId    String?
+
+  tags            Tag[]                 @relation("MemoryTags")
+  lessons         LessonsLearned[]
+  connections     KnowledgeConnection[] @relation("MemoryConnections")
+  relatedMemories KnowledgeConnection[] @relation("RelatedMemories")
+  predictions     Prediction[]
+
+  @@index([issueId])
+  @@index([wardId])
+  @@index([successScore])
+  @@index([createdAt])
+}
+
+model LessonsLearned {
+  id        String    @id @default(uuid())
+  lesson    String
+  impact    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  memory   Memory @relation(fields: [memoryId], references: [id])
+  memoryId String
+
+  @@index([memoryId])
+}
+
+model KnowledgeConnection {
+  id        String         @id @default(uuid())
+  type      ConnectionType
+  weight    Float
+  metadata  Json?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  sourceMemory   Memory @relation("MemoryConnections", fields: [sourceMemoryId], references: [id])
+  sourceMemoryId String
+  targetMemory   Memory @relation("RelatedMemories", fields: [targetMemoryId], references: [id])
+  targetMemoryId String
+
+  @@index([sourceMemoryId])
+  @@index([targetMemoryId])
+}
+
+enum ConnectionType {
+  SIMILAR_ISSUE
+  SAME_LOCATION
+  SAME_ROOT_CAUSE
+  SAME_INFRASTRUCTURE
+  WEATHER_RELATED
+  SEASONAL
+}
+
+// ========================================
+// TAGS
+// ========================================
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  color     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  issues   Issue[]  @relation("IssueTags")
+  memories Memory[] @relation("MemoryTags")
+
+  @@index([name])
+}
+
+// ========================================
+// AI & PREDICTIONS
+// ========================================
+
+model AIConversation {
+  id        String    @id @default(uuid())
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  user     User                  @relation(fields: [userId], references: [id])
+  userId   String
+  messages ConversationMessage[]
+
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id        String      @id @default(uuid())
+  content   String
+  role      MessageRole
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  conversation   AIConversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  sources        Json?
+
+  @@index([conversationId])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model Prediction {
+  id          String         @id @default(uuid())
+  type        PredictionType
+  confidence  Float
+  description String?
+  targetDate  DateTime?
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  memory     Memory?              @relation(fields: [memoryId], references: [id])
+  memoryId   String?
+  asset      InfrastructureAsset? @relation(fields: [assetId], references: [id])
+  assetId    String?
+  ward       Ward?                @relation(fields: [wardId], references: [id])
+  wardId     String?
+  snapshot   AnalyticsSnapshot?   @relation(fields: [snapshotId], references: [id])
+  snapshotId String?
+
+  @@index([type])
+  @@index([confidence])
+  @@index([memoryId])
+  @@index([assetId])
+}
+
+enum PredictionType {
+  ROAD_FAILURE
+  PIPELINE_BURST
+  STREETLIGHT_OUTAGE
+  GARBAGE_OVERFLOW
+  BRIDGE_RISK
+  INFRASTRUCTURE_MAINTENANCE
+}
+
+// ========================================
+// ANALYTICS
+// ========================================
+
+model AnalyticsSnapshot {
+  id                   String    @id @default(uuid())
+  snapshotDate         DateTime  @default(now())
+  infrastructureHealth Float
+  repairSuccess        Float
+  predictionAccuracy   Float
+  knowledgeGrowth      Float
+  avgRepairTime        Int
+  totalMemories        Int
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  // Relations
+  predictions Prediction[]
+
+  @@index([snapshotDate])
+}
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  content   String
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@index([userId])
+  @@index([read])
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ALERT
+  SUCCESS
+}
+
+// ========================================
+// BUDGETS
+// ========================================
+
+model Budget {
+  id           String      @id @default(uuid())
+  name         String
+  amount       Float
+  spent        Float       @default(0)
+  fiscalYear   Int
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  repairs      Repair[]
+
+  @@index([fiscalYear])
+}
+
+// ========================================
+// WEATHER
+// ========================================
+
+model WeatherSnapshot {
+  id            String    @id @default(uuid())
+  timestamp     DateTime
+  temperature   Float?
+  humidity      Float?
+  precipitation Float?
+  windSpeed     Float?
+  condition     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  ward   Ward?   @relation(fields: [wardId], references: [id])
+  wardId String?
+  issues Issue[]
+
+  @@index([timestamp])
+  @@index([wardId])
+}
