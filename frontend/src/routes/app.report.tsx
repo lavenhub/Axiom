@@ -175,7 +175,7 @@ function Report() {
                       onClick={async () => {
                         try {
                           // Quick mock: Assign to the first engineer in the DB
-                          const engRes = await fetch("http://localhost:3001/api/setup/engineers", { headers: { Authorization: `Bearer ${localStorage.getItem("axiom_token")}` } });
+                          const engRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/setup/engineers`, { headers: { Authorization: `Bearer ${localStorage.getItem("axiom_token")}` } });
                           const engineers = await engRes.json();
                           const engineerId = engineers[0]?.id || "mock-engineer-id";
                           
